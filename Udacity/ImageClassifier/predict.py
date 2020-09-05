@@ -12,6 +12,7 @@ import seaborn as sb
 import argparse
 import os
 import sys
+import utils
 
 # Create the parser
 my_parser = argparse.ArgumentParser(description='Train a machine learning model to identify images')
@@ -38,21 +39,8 @@ path_to_image = args.path_to_image
 
 # Build your network
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#device = 'cpu'
 
-model = models.vgg11(pretrained=True)
-
-for param in model.parameters():
-    param.requires_grad = False
-    
-model.classifier = nn.Sequential(nn.Linear(25088,1000),
-                                nn.ReLU(),
-                                nn.Dropout(.2),
-                                nn.Linear(1000,408),
-                                nn.ReLU(),
-                                nn.Dropout(.2),
-                                nn.Linear(408,102),
-                                nn.LogSoftmax(dim=1))
+model  = utils.load_saved_checkpoint(checkpoint_file_with_path)
 
 # criterion = nn.NLLLoss()
 # optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
@@ -63,20 +51,6 @@ print(model)
 with open('cat_to_name.json', 'r') as f:
     cat_to_name = json.load(f)
 
-
-def load_saved_checkpoint(checkpointpath):
-    # if model state is saved with cuda, then running in cpu mode will give errors
-    if torch.cuda.is_available():
-        map_location=lambda storage, loc: storage.cuda()
-    else:
-        map_location='cpu'
-        
-    checkpoint = torch.load(checkpointpath, map_location=map_location)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    model.class_to_idx = checkpoint['index_vals']
-    
-load_saved_checkpoint(checkpoint_file_with_path)
 
 def imshow(image, ax=None, title=None):
     """Imshow for Tensor."""

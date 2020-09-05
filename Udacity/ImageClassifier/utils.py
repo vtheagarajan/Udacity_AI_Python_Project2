@@ -1,20 +1,57 @@
+import torch
+from torch import nn
+from torch import optim
+import torch.nn.functional as F
+from torchvision import datasets,models,transforms
+import matplotlib.pyplot as plt
+import time
+import json
+from PIL import Image
+import numpy as np
+import seaborn as sb
 import argparse
 import os
+import sys
 
-# Create the parser
-my_parser = argparse.ArgumentParser(description='Train a machine learning model to identify images')
+def create_model(model_to_use):
+    # Build your network
 
-# Add the arguments
-my_parser.add_argument('--checkpoint_file_with_path',
-                       type=str,
-                       help='the path to saved model checkpoint file')
+    if model_to_use == 'VGG-11':
+        model = models.vgg11(pretrained=True)
+        for param in model.parameters():
+            param.requires_grad = False
+        
+        model.classifier = nn.Sequential(nn.Linear(25088,1000),
+                                    nn.ReLU(),
+                                    nn.Dropout(.2),
+                                    nn.Linear(1000,408),
+                                    nn.ReLU(),
+                                    nn.Dropout(.2),
+                                    nn.Linear(408,102),
+                                    nn.LogSoftmax(dim=1))
+    elif model_to_use == 'ResNet-18':
+        model = models.resnet18(pretrained=True)
+        model.classifier = nn.Sequential(
+                                    nn.Linear(1000,408),
+                                    nn.ReLU(),
+                                    nn.Dropout(.2),
+                                    nn.Linear(408,102),
+                                    nn.LogSoftmax(dim=1))
+    else:
+        raise Exception('Unsupported Model. Please use ResNet-18 or VGG-11')
 
-my_parser.add_argument('--path_to_image',type=str,help='full path to image to predict')
+    return model
 
-# Execute the parse_args() method
-args = my_parser.parse_args()
-
-checkpoint_file_with_path = args.checkpoint_file_with_path if args.checkpoint_file_with_path is not None else 'checkpoint4.pth'
-path_to_image = args.path_to_image 
-
-print(os.path.isfile(os.path.join(os.curdir,checkpoint_file_with_path)))
+def load_saved_checkpoint(checkpointpath):
+    # if model state is saved with cuda, then running in cpu mode will give errors
+    if torch.cuda.is_available():
+        map_location=lambda storage, loc: storage.cuda()
+    else:
+        map_location='cpu'
+        
+    checkpoint = torch.load(checkpointpath, map_location=map_location)
+    model = create_model(checkpoint['model_to_use'])
+    model.load_state_dict(checkpoint['model_state_dict'])
+    # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    model.class_to_idx = checkpoint['index_vals']
+    return model

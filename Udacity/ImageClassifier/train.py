@@ -12,6 +12,7 @@ import seaborn as sb
 import argparse
 import os
 import sys
+import utils
 
 # Create the parser
 my_parser = argparse.ArgumentParser(description='Train a machine learning model to identify images')
@@ -115,37 +116,8 @@ test_loader = torch.utils.data.DataLoader(test_data,batch_size=test_batch_size,s
 
 #print(test_loader.batch_size)
 
-# Build your network
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#device = 'cpu'
-
-if model_to_use == 'VGG-11':
-    model = models.vgg11(pretrained=True)
-    for param in model.parameters():
-        param.requires_grad = False
-    
-    model.classifier = nn.Sequential(nn.Linear(25088,1000),
-                                nn.ReLU(),
-                                nn.Dropout(.2),
-                                nn.Linear(1000,408),
-                                nn.ReLU(),
-                                nn.Dropout(.2),
-                                nn.Linear(408,102),
-                                nn.LogSoftmax(dim=1))
-elif model_to_use == 'ResNet-18':
-    model = models.resnet18(pretrained=True)
-    model.classifier = nn.Sequential(
-                                nn.Linear(1000,408),
-                                nn.ReLU(),
-                                nn.Dropout(.2),
-                                nn.Linear(408,102),
-                                nn.LogSoftmax(dim=1))
-else:
-    raise Exception('Unsupported Model. Please use ResNet-18 or VGG-11')
-
-
-
-
+model = utils.create_model(model_to_use)
 
 criterion = nn.NLLLoss()
 optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
