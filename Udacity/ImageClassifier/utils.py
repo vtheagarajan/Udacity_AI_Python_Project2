@@ -44,14 +44,24 @@ def create_model(model_to_use):
 
 def load_saved_checkpoint(checkpointpath):
     # if model state is saved with cuda, then running in cpu mode will give errors
+    
     if torch.cuda.is_available():
         map_location=lambda storage, loc: storage.cuda()
     else:
         map_location='cpu'
         
+    print(map_location)
+    
     checkpoint = torch.load(checkpointpath, map_location=map_location)
     model = create_model(checkpoint['model_to_use'])
+    print('got model')
     model.load_state_dict(checkpoint['model_state_dict'])
     # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     model.class_to_idx = checkpoint['index_vals']
     return model
+
+
+
+    
+    
+    return ax
