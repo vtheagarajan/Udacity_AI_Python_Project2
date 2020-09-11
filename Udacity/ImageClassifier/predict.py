@@ -96,6 +96,7 @@ def process_image(image_path):
     else:
         im = torch.from_numpy(np_image).type(torch.cuda.FloatTensor)
     
+    #Model expects the first dimension to be batch size, so add batch size of 1
     im = im.unsqueeze(0)
         
     return im
@@ -147,5 +148,7 @@ catnames = [cat_to_name[i] for i in cat_list if i in cat_to_name]
 # ax2.barh(catnames,probs)
 print(f"Probabilities = {probs}")
 print(f"Classes = {catnames}")
+dictresults = dict(zip(catnames,probs))
+print(dictresults)
 
 

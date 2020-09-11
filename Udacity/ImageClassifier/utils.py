@@ -59,9 +59,3 @@ def load_saved_checkpoint(checkpointpath):
     # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     model.class_to_idx = checkpoint['index_vals']
     return model
-
-
-
-    
-    
-    return ax
