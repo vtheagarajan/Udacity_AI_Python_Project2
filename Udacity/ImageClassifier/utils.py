@@ -50,12 +50,31 @@ def load_saved_checkpoint(checkpointpath):
     else:
         map_location='cpu'
         
-    print(map_location)
+    #print(map_location)
     
     checkpoint = torch.load(checkpointpath, map_location=map_location)
     model = create_model(checkpoint['model_to_use'])
-    print('got model')
     model.load_state_dict(checkpoint['model_state_dict'])
-    # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
     model.class_to_idx = checkpoint['index_vals']
     return model
+
+def load_saved_checkpoint_for_training(checkpointpath, learning_rate, device):
+    
+    if device == 'cuda:0':
+        map_location=lambda storage, loc: storage.cuda()
+    else:
+        map_location='cpu'
+        
+    #print(map_location)
+    checkpoint = torch.load(checkpointpath, map_location=map_location)
+    model = create_model(checkpoint['model_to_use'])
+    model.to(device)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.class_to_idx = checkpoint['index_vals']
+
+    optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    return model, optimizer
+

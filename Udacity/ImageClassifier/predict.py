@@ -3,12 +3,10 @@ from torch import nn
 from torch import optim
 import torch.nn.functional as F
 from torchvision import datasets,models,transforms
-#import matplotlib.pyplot as plt
 import time
 import json
 from PIL import Image
 import numpy as np
-#import seaborn as sb
 import argparse
 import os
 import sys
@@ -22,17 +20,18 @@ my_parser.add_argument('path_to_image',type=str,help='full path to image to pred
 my_parser.add_argument('-chk','--checkpoint_file_with_path',
                        type=str,
                        help='the path to saved model checkpoint file')
-
-
+my_parser.add_argument('--training_device',type=str,help='valid values are GPU, CPU or AUTO.  In Auto mode the code will select GPU if it is available')
+my_parser.add_argument('--cat_to_name_file',type=str,help='full path for file Json containing categories to names. Default is cat_to_name.json')
+my_parser.add_argument('--expected_cat_code',type=str,help='optional: provide expected category code and output will include expected category name')
 
 # Execute the parse_args() method
 args = my_parser.parse_args()
 
 checkpoint_file_with_path = args.checkpoint_file_with_path if args.checkpoint_file_with_path is not None else 'c:\\temp\\checkpoint_VGG-11.pth'
 path_to_image = args.path_to_image 
-
-#hard code image name for testing since it does not seem to work from command prompt
-#path_to_image = '/home/workspace/ImageClassifier/image_07090.jpg'
+training_device = args.training_device if args.training_device is not None else 'Auto'
+cat_to_name_file = args.cat_to_name_file if args.cat_to_name_file is not None else 'cat_to_name.json'
+expected_cat_code = args.expected_cat_code
 
 if not os.path.isfile(path_to_image):
     print('The path specified does not exist')
@@ -41,18 +40,20 @@ if not os.path.isfile(path_to_image):
 
 
 # Build your network
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+if training_device == 'Auto':
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+elif training_device == 'GPU':
+    device = 'cuda:0'
+else:
+    device = 'cpu'
 
 model  = utils.load_saved_checkpoint(checkpoint_file_with_path)
 
-print('loaded the model')
-# criterion = nn.NLLLoss()
-# optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
 model.to(device)
 print(f"device={device}")
 print(model)
 
-with open('cat_to_name.json', 'r') as f:
+with open(cat_to_name_file, 'r') as f:
     cat_to_name = json.load(f)
 
 
@@ -126,15 +127,13 @@ def predict(image_path, model, topk=5):
 
         #print(f"ps={ps} and label={labels}")
 
-        top_p, top_class = torch.topk(ps,topk,dim=1)
+        top_p, top_class = torch.topk(ps,topk,dim=1,sorted=True)
         
         return (top_p,top_class)
 
 
 probs, classes = predict(path_to_image, model)
 
-# im = process_image(image_path)
-#imshow(im,ax1)
 probs = probs.to('cpu')
 classes = classes.to('cpu')
 
@@ -142,13 +141,17 @@ probs = probs.data.numpy().squeeze()
 classes = classes.data.numpy().squeeze()
 idx_to_class = {value:key for key, value in model.class_to_idx.items()}
 cat_list = [idx_to_class[i] for i in classes if i in idx_to_class] 
-print(f"cat_list={cat_list}")
+#print(f"cat_list={cat_list}")
 catnames = [cat_to_name[i] for i in cat_list if i in cat_to_name]
-#print(f"Expected Flower Name = {cat_to_name[flower_cat]}")
-# ax2.barh(catnames,probs)
-print(f"Probabilities = {probs}")
-print(f"Classes = {catnames}")
+
+print('************************ Printing Results **************************\n')
+if expected_cat_code is not None:
+    print(f"Expected category Name = {cat_to_name[expected_cat_code]}")
+
+#print(f"Probabilities = {probs}")
+#print(f"Classes = {catnames}")
 dictresults = dict(zip(catnames,probs))
-print(dictresults)
+print(f"Prediction with probabilities: {dictresults}")
+print(f"Image most likely is: {list(dictresults.keys())[0]} with probability of {dictresults[list(dictresults.keys())[0]] * 100:.3f}%")
 
 
