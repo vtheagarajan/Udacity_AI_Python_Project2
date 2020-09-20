@@ -5,7 +5,7 @@ This is the 2nd project in Udacity's 'AI Programming with Python' Nanodegree
 Implement an image classsifier using PyTorch to classify flowers.  You will use a trained model and update the classifer / fully connected layer, so that it can be trained on 102 different flower categories.
 
 ### Part 1 of the project
-In Part 1 of the project, the code was developed in Jupyter Notebook
+In Part 1 of the project, the code was developed in Jupyter Notebook. The code for this is in *Image Classifier Project.ipynb*.  The export of the notebook is also available as Python code in *Image Classifier Project.py*
 
 ### Part 2 of the project
 Use the code developed in Part 1 to create two Python files:
